@@ -3,9 +3,10 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import Button from '@/components/ui/Button';
+import { mockStats, mockUserProfile } from '@/data/mock';
 
 import lightLogo from '@/assets/light_logo.jpeg';
 import darkLogo from '@/assets/dark_logo.jpeg';
@@ -19,10 +20,10 @@ const rings = [
 ];
 
 const kpis = [
-  { label: 'Carbon Score', value: 87, suffix: '/100', color: '#22C55E', pos: 'top' },
-  { label: 'Carbon Saved', value: 248, suffix: 'kg CO₂', color: '#38BDF8', pos: 'right' },
-  { label: 'Reward Wallet', value: 2450, prefix: '₹', suffix: '', color: '#A855F7', pos: 'bottom' },
-  { label: 'Eco Rank', value: 8, suffix: '%', prefix: 'Top ', color: '#F59E0B', pos: 'left' },
+  { label: 'Carbon Score', value: mockUserProfile.carbonScore, suffix: '/100', color: '#22C55E', pos: 'top' },
+  { label: 'Carbon Saved', value: Math.round(mockUserProfile.carbonSavedKg), suffix: ' kg', color: '#38BDF8', pos: 'right' },
+  { label: 'Reward Points', value: mockUserProfile.rewardPoints, suffix: ' pts', color: '#A855F7', pos: 'bottom' },
+  { label: 'Eco Rank', value: Number.parseInt(mockUserProfile.rankPercentile.replace(/\D/g, ''), 10), suffix: '%', prefix: 'Top ', color: '#F59E0B', pos: 'left' },
 ];
 
 /* ─── Animated Counter ─── */
@@ -88,67 +89,13 @@ function RadialRing({ radius, width, percent, color, delay }: {
   );
 }
 
-/* ─── Leaf Cursor SVG ─── */
-function LeafCursor({ x, y, isDark }: { x: number; y: number; isDark: boolean }) {
-  return (
-    <motion.div
-      style={{
-        position: 'absolute',
-        left: x,
-        top: y,
-        pointerEvents: 'none',
-        zIndex: 10,
-        transform: 'translate(-12px, -12px)',
-      }}
-      animate={{
-        rotate: [0, 8, -5, 0],
-        scale: [1, 1.1, 1],
-      }}
-      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22L6.66 19.7C7.14 19.87 7.64 20 8.17 20C12.24 20 15.63 15.22 17 8Z"
-          fill={isDark ? 'rgba(34,197,94,0.5)' : 'rgba(22,163,74,0.4)'}
-        />
-        <path
-          d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22L6.66 19.7C7.14 19.87 7.64 20 8.17 20C12.24 20 15.63 15.22 17 8Z"
-          stroke={isDark ? '#22C55E' : '#16A34A'}
-          strokeWidth="0.8"
-          fill="none"
-        />
-        {/* Leaf vein */}
-        <path
-          d="M10 15C10.5 12.5 12 10 17 8"
-          stroke={isDark ? '#22C55E' : '#16A34A'}
-          strokeWidth="0.5"
-          opacity="0.6"
-          fill="none"
-        />
-      </svg>
-    </motion.div>
-  );
-}
-
 /* ─── HERO ─── */
 export default function Hero() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const heroRef = useRef<HTMLElement>(null);
   const [hoveredRing, setHoveredRing] = useState<number | null>(null);
 
-  // Leaf cursor position
-  const [leafPos, setLeafPos] = useState({ x: -100, y: -100 });
-  const [showLeaf, setShowLeaf] = useState(false);
-
   useEffect(() => { setMounted(true); }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const rect = heroRef.current?.getBoundingClientRect();
-    if (rect) {
-      setLeafPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    }
-  }, []);
 
   const logoSrc = mounted && theme === 'dark' ? darkLogo : lightLogo;
   const isDark = mounted && theme === 'dark';
@@ -156,24 +103,14 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      ref={heroRef}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setShowLeaf(true)}
-      onMouseLeave={() => setShowLeaf(false)}
       style={{
         minHeight: 'calc(100vh - var(--navbar-height))',
         display: 'flex',
         alignItems: 'center',
         position: 'relative',
         overflow: 'hidden',
-        cursor: 'none',
       }}
     >
-      {/* Leaf cursor */}
-      {showLeaf && mounted && (
-        <LeafCursor x={leafPos.x} y={leafPos.y} isDark={isDark} />
-      )}
-
       <div
         className="container"
         style={{
@@ -192,6 +129,12 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
+          <span
+            className="badge"
+            style={{ marginBottom: 'var(--space-lg)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+          >
+            Sustainability, made actionable
+          </span>
           <h1 style={{
             fontFamily: 'var(--font-heading)',
             fontSize: 'clamp(2.8rem, 5.5vw, 5.5rem)',
@@ -239,9 +182,9 @@ export default function Hero() {
             transition={{ delay: 0.5 }}
           >
             {[
-              { label: 'Users', value: 12847, suffix: '+' },
-              { label: 'CO₂ Saved', value: 89, suffix: '.4T' },
-              { label: 'Trees Equiv.', value: 31, suffix: '' },
+              { label: 'Community members', value: mockStats.totalUsers, suffix: '+' },
+              { label: 'CO₂ saved (kg)', value: mockStats.carbonSavedKg, suffix: '' },
+              { label: 'Smart machines', value: mockStats.smartMachines, suffix: '' },
             ].map(stat => (
               <div key={stat.label}>
                 <div style={{
@@ -459,7 +402,6 @@ export default function Hero() {
           .hero-hub {
             max-width: 300px !important;
           }
-          #hero { cursor: auto !important; }
         }
       `}</style>
     </section>
